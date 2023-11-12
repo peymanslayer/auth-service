@@ -1,15 +1,16 @@
-import { Controller, Get } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import { Controller, Get,Res } from '@nestjs/common';
+import { AuthService } from './services/auth.service';
+import { MessagePattern,Payload } from '@nestjs/microservices';
+import { CreateUser } from './dtos/create.user.dto';
 
 @Controller()
 export class AuthController {
-  static getHello(): any {
-    throw new Error('Method not implemented.');
-  }
   constructor(private readonly authService: AuthService) {}
 
-  @Get()
-  getHello(): string {
-    return this.authService.getHello();
-  }
+  @MessagePattern('signUp')
+  async signUp(@Payload() user:CreateUser){
+   const result=await this.authService.signUp(user);
+   return result;
+}
+
 }
