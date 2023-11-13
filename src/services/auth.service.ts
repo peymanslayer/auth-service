@@ -2,6 +2,10 @@ import { Injectable, Inject } from '@nestjs/common';
 import { CreateUser } from 'src/dtos/create.user.dto';
 import { ClientProxy } from '@nestjs/microservices';
 import { Tokens } from './tokens.service';
+import {
+  resultTokenMessage,
+  resultMessage,
+} from 'src/types/result.message.type';
 
 @Injectable()
 export class AuthService {
@@ -10,7 +14,7 @@ export class AuthService {
     private readonly token: Tokens,
   ) {}
 
-  async signUp(user: CreateUser) {
+  async signUp(user: CreateUser): Promise<resultMessage | resultTokenMessage> {
     const findUser = await this.client.emit('findUser', user.email).subscribe();
     console.log(findUser);
     if (findUser) {
@@ -23,8 +27,7 @@ export class AuthService {
     }
   }
 
-
-  async signUpProcess(user: CreateUser) {
+  async signUpProcess(user: CreateUser): Promise<resultTokenMessage> {
     await this.client.emit('insertUser', user).toPromise();
     const Tokens = await this.token.getTokens(user.email);
     const { acssesToken, refreshToken } = Tokens;
