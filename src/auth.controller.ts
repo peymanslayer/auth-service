@@ -15,4 +15,9 @@ export class AuthController {
     const result = await this.authService.signUp(user);
     return result;
   }
+
+  async signIn(@Payload() user:CreateUser){
+    const signIn=await this.authService.signIn(user);
+    return signIn;
+  }
 }

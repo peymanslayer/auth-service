@@ -1,8 +1,10 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, ForbiddenException } from '@nestjs/common';
 import { CreateUser } from 'src/dtos/create.user.dto';
 import { ClientProxy } from '@nestjs/microservices';
 import { Tokens } from './tokens.service';
-import {lastValueFrom} from 'rxjs'
+import { lastValueFrom } from 'rxjs';
+import * as bcrypt from 'bcrypt';
+
 import {
   resultTokenMessage,
   resultMessage,
@@ -17,24 +19,22 @@ export class AuthService {
 
   async signUp(user: CreateUser): Promise<resultMessage | resultTokenMessage> {
     const findUser = this.client.send('findUser', user.email);
-    const result=await lastValueFrom(findUser)
-    console.log(result);
-    
+    const result = await lastValueFrom(findUser);
+
     if (result !== null) {
-      console.log('out');
       return {
         status: 202,
         message: 'user exist',
       };
     } else {
-      console.log('in');
-            
       return this.signUpProcess(user);
     }
   }
 
   async signUpProcess(user: CreateUser): Promise<resultTokenMessage> {
-    const data= await this.client.send('insertUser', user).toPromise();
+    const hashedPassword =await bcrypt.hash(user.password,10);
+    user.password=hashedPassword;
+    const data = await this.client.send('insertUser',user).toPromise();
     console.log(data);
     
     const Tokens = await this.token.getTokens(user.email);
@@ -46,5 +46,17 @@ export class AuthService {
         refreshToken,
       },
     };
+  }
+
+  async signIn(user) {
+    const findUser = this.client.send('findUser', user.email);
+    const result = await lastValueFrom(findUser);
+    if (!result) throw new ForbiddenException('Access Denied');
+    else {
+    }
+  }
+
+  async signInProcess(){
+
   }
 }
