@@ -5,9 +5,13 @@ import { PassportModule } from '@nestjs/passport';
 import { ClientsModule } from '@nestjs/microservices';
 import { Transport } from '@nestjs/microservices';
 import { Tokens } from './services/tokens.service';
+import { MongooseModule } from '@nestjs/mongoose';
+import { TokenSchema } from './schema/token.schema';
 
 @Module({
   imports: [
+    MongooseModule.forFeature([{ name: 'token', schema: TokenSchema }]),
+    MongooseModule.forRoot('mongodb://localhost:27017/token'),
     PassportModule,
     ClientsModule.register([
       {

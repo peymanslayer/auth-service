@@ -1,7 +1,9 @@
+import mongoose from "mongoose";
+
 export type resultTokenMessage = {
   status: number;
   message: {
-    acssesToken: string;
+    id: mongoose.Types.ObjectId;
     refreshToken: string;
   };
 };
