@@ -7,6 +7,8 @@ import { Transport } from '@nestjs/microservices';
 import { Tokens } from './services/tokens.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { TokenSchema } from './schema/token.schema';
+import { circuitBreakerService } from './services/circuit.service';
+
 
 @Module({
   imports: [
@@ -28,6 +30,6 @@ import { TokenSchema } from './schema/token.schema';
     ]),
   ],
   controllers: [AuthController],
-  providers: [AuthService,Tokens],
+  providers: [AuthService,Tokens,circuitBreakerService],
 })
 export class AuthModule {}

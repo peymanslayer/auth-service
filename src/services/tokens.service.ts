@@ -1,7 +1,7 @@
-import { JwtService } from '@nestjs/jwt';
 import { Model } from 'mongoose';
 import { Token, TokenDocument } from 'src/schema/token.schema';
 import { InjectModel } from '@nestjs/mongoose';
+import { JwtService } from '@nestjs/jwt';
 
 export class Tokens {
   public jwtService: JwtService = new JwtService();
@@ -28,7 +28,7 @@ export class Tokens {
     };
   }
 
-  
+
   async saveToken(
     token: { refreshToken: string; acssesToken: string },
     findToken: TokenDocument,
@@ -47,6 +47,21 @@ export class Tokens {
         status: 200,
         message: createToken,
       };
+    }
+  }
+
+  async validateRefreshToken(token:{refreshToken:string}){
+    const verify=this.jwtService.verify(token.refreshToken,{secret:'1234'});
+    if(verify){
+      return {
+        status:200,
+        message:token
+      };
+    }else{
+      return{
+        status:403,
+        message:'refreshToken is exipre please signIn again'
+      }
     }
   }
 }

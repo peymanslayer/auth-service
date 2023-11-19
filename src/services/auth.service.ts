@@ -2,7 +2,7 @@ import { Injectable, Inject, ForbiddenException } from '@nestjs/common';
 import { CreateUser } from 'src/dtos/create.user.dto';
 import { ClientProxy } from '@nestjs/microservices';
 import { Tokens } from './tokens.service';
-import { Token, TokenDocument } from 'src/schema/token.schema';
+import { Token } from 'src/schema/token.schema';
 import { Model } from 'mongoose';
 import { lastValueFrom } from 'rxjs';
 import * as bcrypt from 'bcrypt';
@@ -12,30 +12,36 @@ import {
 } from 'src/types/result.message.type';
 import { InjectModel } from '@nestjs/mongoose';
 import { UserModelType } from 'src/types/user.model.type';
+import { circuitBreakerService } from './circuit.service';
+import { isString } from 'class-validator';
 
 @Injectable()
-export class AuthService extends Tokens {
+export class AuthService {
   constructor(
     @Inject('USER_SERVICE') private client: ClientProxy,
     private readonly token: Tokens,
+    private readonly circuitBreaker:circuitBreakerService,
     @InjectModel('token') public readonly model: Model<Token>,
-  ) {
-    super(model);
-  }
+  ) {}
 
-  async signUp(user: CreateUser): Promise<resultMessage | resultTokenMessage> {
-    const findUser = this.client.send('findUser', user.email);
-    const result = await lastValueFrom(findUser);
-    if (result !== null) {
-      return {
-        status: 202,
-        message: 'user exist',
-      };
-    } else {
-      return this.signUpProcess(user);
+  async signUp(user: CreateUser) {
+    const result=await this.circuitBreaker.circuitBreaker('findUser',user);
+    if (result.message.startsWith('err')){
+      return{
+        status:206,
+        message:result.message
+      }
     }
+    if(result.message === 'user exist'){
+     return{
+      status:200,
+      message:'user exist'
+     }
+    }else{
+      return await this.signUpProcess(user)
+    }
+    
   }
-
 
   async signUpProcess(user: CreateUser): Promise<resultTokenMessage> {
     const hashedPassword = await bcrypt.hash(user.password, 10);
@@ -56,7 +62,6 @@ export class AuthService extends Tokens {
     };
   }
 
-
   async signIn(user: CreateUser) {
     const findUser = this.client.send('findUser', user.email);
     const message = await lastValueFrom(findUser);
@@ -66,6 +71,7 @@ export class AuthService extends Tokens {
       return result;
     }
   }
+
 
   async signInProcess(user: CreateUser, result: UserModelType) {
     const passIsEqual = await bcrypt.compare(user.password, result.password);
@@ -87,4 +93,11 @@ export class AuthService extends Tokens {
     }
   }
 
+  async refreshToken(refreshToken: { refreshToken: string }) {
+    if (!refreshToken) {
+      throw new ForbiddenException('Access Denied');
+    } else {
+      return await this.token.validateRefreshToken(refreshToken);
+    }
+  }
 }
